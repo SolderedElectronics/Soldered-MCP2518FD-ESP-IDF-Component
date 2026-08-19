@@ -1,40 +1,78 @@
-# Soldered NAZIV PROIZVODA Component
+# Soldered CAN Bus Breakout MCP2518FD Component
 
-| ![Product name](https://upload.wikimedia.org/wikipedia/commons/8/8f/Example_image.svg) |
-| :------------------------------------------------------------------------------------: |
-|                      [NAZIV PROIZVODA](https://www.solde.red/SKU)                      |
+| ![CAN Bus Breakout MCP2518FD](https://cms.soldered.com/products/333020/media/333020_featured-photo_ca7a4d.jpg) |
+| :-----------------------------------------------------------------------------------------------------------: |
+|                        [CAN Bus Breakout MCP2518FD](https://solde.red/333020)                        |
 
-OPIS PROIZVODA + LINK NA [Qwiic ecosystem](https://soldered.com/collections/qwiic-ecosystem).
-
-### Using the template
-
-Before publishing a new component make sure to replace:
-
-- `NAZIV PROIZVODA`, `OPIS PROIZVODA`, product image, SKU link, and the "Original source" line in this README
-- `version`, `description`, `url` in `idf_component.yml`
-- `components:` name and `namespace:` in `.github/workflows/upload_component.yml`
-- filenames in `src/` and `include/` plus matching `SRCS` and `INCLUDE_DIRS` in `CMakeLists.txt` and `#include` in the `.c` file
-- dependency key in `examples/.../idf_component.yml` (path stays `../../..`)
-- `@file`, `@brief`, `@param`, `@return` Doxygen comments in `include/*.h`, `src/*.c`, and `examples/basic/main/main.c` to describe the real API
-
-Also make sure to add examples.
-
-Run `./format.sh` before committing to auto-format `src/`, `include/`, and the example against the project's astyle rules (`.astyle-rules.yml`). CI runs the same check on every push/PR via `.github/workflows/format-check.yml` and fails on unformatted code.
-
-**Remove this section of README after everything is done!**
-
-For uploading to Registry you need to register a trusted publisher under a component. To make the release to the registry you must bump `version` in `idf_component.yml` to `X.Y.Z`, push that commit, and confirm Format Check + Build Examples both pass on it (Actions tab) before tagging. Only once both are green: `git tag vX.Y.Z && git push origin vX.Y.Z`.
+ESP-IDF driver for the Soldered CAN Bus Breakout board, built around the Microchip MCP2518FD CAN FD controller and driven over SPI. Handles both classic CAN 2.0 and CAN FD, at up to 1 Mbps arbitration and 8 Mbps data rate.
 
 ### Repository Contents
 
 - **/src** - source files (.c)
 - **/include** - header files (.h)
+  - `soldered_mcp2518fd.h` - the public API
+  - `mcp2518fd_dfs.h` - register map, bit definitions and object types
 - **/examples** - examples for using the library
+  - `can20_send` - send frames using CAN 2.0
+  - `can20_recv_check` - receive CAN 2.0 frames by polling
+  - `can20_recv_int` - receive CAN 2.0 frames using the INT pin
+  - `can20_recv_mask_filt` - receive CAN 2.0 frames through a mask and filter
+  - `canfd_send` - send frames using CAN FD
+  - `canfd_recv_check` - receive CAN FD frames by polling
+  - `canfd_recv_int` - receive CAN FD frames using the INT pin
+  - `canfd_recv_mask_filt` - receive CAN FD frames through a mask and filter
+  - `obdii_pids` - query a vehicle's OBD-II PIDs from the serial console
 - **_other_** - idf_component.yml manifest file for ESP Component Registry
+
+
+### Usage
+
+The SPI bus belongs to your application, not to the driver, so that other devices can share it:
+
+```c
+spi_bus_config_t bus_cfg = {
+    .mosi_io_num = GPIO_NUM_23,
+    .miso_io_num = GPIO_NUM_19,
+    .sclk_io_num = GPIO_NUM_18,
+    .quadwp_io_num = -1,
+    .quadhd_io_num = -1,
+};
+ESP_ERROR_CHECK(spi_bus_initialize(SPI2_HOST, &bus_cfg, SPI_DMA_CH_AUTO));
+
+mcp2518fd_t can;
+ESP_ERROR_CHECK(mcp2518fd_init(&can, SPI2_HOST, GPIO_NUM_5));
+
+while (CAN_OK != mcp2518fd_begin(&can, CAN_125KBPS, MCP2518FD_20MHz)) {
+    vTaskDelay(pdMS_TO_TICKS(100));
+}
+```
+
+`mcp2518fd_begin()` sits in a retry loop because the controller needs a moment after power-up before it answers over SPI. `MCP2518FD_20MHz` is the oscillator the Soldered breakout is populated with.
+
+**Sending and receiving:**
+
+```c
+uint8_t data[8] = {0, 1, 2, 3, 4, 5, 6, 7};
+mcp2518fd_send_msg_buf(&can, 0x01, 0, 8, data);   // id, extended?, length, payload
+
+if (CAN_MSGAVAIL == mcp2518fd_check_receive(&can)) {
+    uint8_t len, buf[8];
+    mcp2518fd_read_msg_buf(&can, &len, buf);      // read first, then ask for the ID
+    uint32_t id = mcp2518fd_get_can_id(&can);
+}
+```
+
+**CAN FD:** call `mcp2518fd_set_mode(&can, CAN_NORMAL_MODE)` before `mcp2518fd_begin()`, since the driver defaults to classic mode which cannot carry FD frames. Pass a dual bit rate such as `CAN_125K_500K` to `mcp2518fd_begin()`, and convert payload lengths over 8 bytes with `mcp2518fd_len2dlc()`.
+
+**Masks and filters:** `mcp2518fd_init_filt_mask()` sets a filter and its mask together and links it to the RX FIFO. `mcp2518fd_init_mask()` and `mcp2518fd_init_filt()` set them separately. There are 32 of each, numbered 0 to 31.
+
+### Original source
+
+This is a port of the [Soldered CAN Bus Breakout MCP2518 Arduino library](https://github.com/SolderedElectronics/Soldered-CAN-Bus-Breakout-MCP2518-Arduino-Library), whose register level code comes from the Microchip MCP2518FD SDK and whose bit timing calculation comes from [acan2517FD](https://github.com/pierremolinaro/acan2517FD).
 
 ### Hardware design
 
-You can find hardware design for this board in _NAZIV PROIZVODA_ hardware repository.
+Hardware design, BOM, gerbers, and 3D files for this board are in its [hardware repository](https://github.com/SolderedElectronics/CAN-Bus-Breakout-MCP2518-hardware-design).
 
 ### Documentation
 
@@ -49,10 +87,6 @@ At Soldered, we design and manufacture a wide selection of electronic products t
 - [Web Store](https://www.soldered.com/shop)
 - [Tutorials & Projects](https://soldered.com/learn)
 - [Documentation](https://docs.soldered.com)
-
-### Original source
-
-This library is possible thanks to original [arduino-mcp23017](https://github.com/blemasle/arduino-mcp23017) library. Thank you, blemasle.
 
 ### Open-source license
 
