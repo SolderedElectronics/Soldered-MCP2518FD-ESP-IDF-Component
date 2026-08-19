@@ -1,6 +1,6 @@
 # Soldered CAN Bus Breakout MCP2518FD Component
 
-| ![CAN Bus Breakout MCP2518FD](https://cms.soldered.com/products/333020/media/333020_featured-photo_ca7a4d.jpg) |
+| ![CAN Bus Breakout MCP2518FD](https://soldered.com/cdn/shop/files/333020_featured-photo_d9566c.jpg) |
 | :-----------------------------------------------------------------------------------------------------------: |
 |                        [CAN Bus Breakout MCP2518FD](https://solde.red/333020)                        |
 
@@ -72,7 +72,7 @@ This is a port of the [Soldered CAN Bus Breakout MCP2518 Arduino library](https:
 
 ### Hardware design
 
-Hardware design, BOM, gerbers, and 3D files for this board are in its [hardware repository](https://github.com/SolderedElectronics/CAN-Bus-Breakout-MCP2518-hardware-design).
+Hardware design, BOM, gerbers, and 3D files for this board are in its [hardware repository](https://github.com/SolderedElectronics/CAN-Transceiver-MCP2518-board-hardware-design).
 
 ### Documentation
 
