@@ -1,0 +1,3 @@
+dependencies:
+  Soldered-MCP2518FD-ESP-IDF-Component:
+    path: "../../.."
