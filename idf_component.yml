@@ -1,4 +1,4 @@
-version: "0.0.3"
-description: "A simple example component"
-url: "https://github.com/SolderedElectronics/soldered-esp-idf-component-template"
+version: "1.0.0"
+description: "Soldered CAN Bus Breakout (MCP2518FD) component"
+url: "https://github.com/SolderedElectronics/Soldered-MCP2518FD-ESP-IDF-Component"
 license: "GPL-3.0"
